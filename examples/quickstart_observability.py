@@ -10,13 +10,15 @@ and Gateway in-process and shows:
   2. Listing 7.13 — query a cost report by team, then drill down into
      models for a specific team.
 
+For a richer demo with the full Figure 7.5 trace waterfall and a
+multi-turn session, see ``quickstart_observability_walkthrough.py``.
+
 Run:  python examples/quickstart_observability.py
 """
 
 from __future__ import annotations
 
 import sys
-import threading
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -24,6 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from examples._bootstrap import start_services_unless_running
 from genai_platform import GenAIPlatform
 from services.gateway.main import main as start_gateway
 from services.observability.models import Generation, Span
@@ -33,10 +36,6 @@ from services.shared.server import run_aio_service_main
 
 def start_observability():
     run_aio_service_main("observability", ObservabilityServiceImpl)
-
-
-def start_in_thread(target, name):
-    threading.Thread(target=target, daemon=True, name=name).start()
 
 
 def _make_span(trace_id, span_id, *, service, operation, attrs=None):
@@ -137,12 +136,9 @@ def main():
     print("=" * 60)
     print("  Quickstart: platform.observability")
     print("=" * 60)
-    print("\nStarting Observability service and Gateway...")
-    start_in_thread(start_observability, "ObservabilityService")
-    time.sleep(1)
-    start_in_thread(start_gateway, "Gateway")
-    time.sleep(1)
-    print("Services ready.")
+    started = start_services_unless_running([start_observability, start_gateway])
+    if started:
+        print("Services ready.")
 
     platform = GenAIPlatform()
     try:

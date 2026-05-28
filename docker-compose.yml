@@ -33,6 +33,8 @@ services:
       - ./services/sessions/schema.sql:/docker-entrypoint-initdb.d/01-sessions.sql:ro
       - ./services/data/schema.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
       - ./services/workflow/schema.sql:/docker-entrypoint-initdb.d/03-workflow.sql:ro
+      - ./services/observability/schema.sql:/docker-entrypoint-initdb.d/04-observability.sql:ro
+      - ./services/experiments/schema.sql:/docker-entrypoint-initdb.d/05-experiments.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d genai_platform"]
       interval: 5s
@@ -110,6 +112,14 @@ services:
       context: .
       dockerfile: docker/observability.Dockerfile
     image: genai-platform/observability:dev
+    environment:
+      # Persist traces, generations, logs, metrics, and scores to
+      # Postgres. Remove this var to fall back to the ephemeral
+      # in-memory store.
+      OBSERVABILITY_POSTGRES_DSN: postgresql://postgres@postgres/genai_platform
+    depends_on:
+      postgres:
+        condition: service_healthy
     # The Observability Service has no upstream dependencies; it is the
     # bottom of the platform telemetry stack. Spans, generations, logs,
     # metrics, and scores are buffered + flushed by the calling
@@ -124,8 +134,14 @@ services:
       # Reach the Observability Service for trace/score lookups
       # (AddFromProduction, RunScoringRule, SubmitAnnotation).
       OBSERVABILITY_SERVICE_ADDR: observability:50059
+      # Persist targets, datasets, evaluations, scoring rules,
+      # experiments, assignments, outcomes, and annotations.
+      EXPERIMENTS_POSTGRES_DSN: postgresql://postgres@postgres/genai_platform
     depends_on:
-      - observability
+      observability:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   gateway:
     build:
@@ -144,15 +160,54 @@ services:
       WORKFLOW_SERVICE_ADDR: workflow:50058
       OBSERVABILITY_SERVICE_ADDR: observability:50059
       EXPERIMENTS_SERVICE_ADDR: experiments:50060
+    # Wait for each backend's TCP port to be ready before the gateway tries
+    # to forward calls. Avoids the cold-start gRPC errors the gateway logs
+    # used to swallow when it raced ahead of the services it depends on.
     depends_on:
-      - sessions
-      - models
-      - data
-      - tools
-      - guardrails
-      - workflow
-      - observability
-      - experiments
+      sessions:
+        condition: service_healthy
+      models:
+        condition: service_healthy
+      data:
+        condition: service_healthy
+      tools:
+        condition: service_healthy
+      guardrails:
+        condition: service_healthy
+      workflow:
+        condition: service_healthy
+      observability:
+        condition: service_healthy
+      experiments:
+        condition: service_healthy
+
+  observability-dashboard:
+    build:
+      context: .
+      dockerfile: docker/observability_dashboard.Dockerfile
+    image: genai-platform/observability-dashboard:dev
+    environment:
+      GENAI_GATEWAY_URL: gateway:50051
+      GENAI_GATEWAY_INSECURE: "1"
+    ports:
+      - "8501:8501"
+    depends_on:
+      gateway:
+        condition: service_started
+
+  experiments-dashboard:
+    build:
+      context: .
+      dockerfile: docker/experiments_dashboard.Dockerfile
+    image: genai-platform/experiments-dashboard:dev
+    environment:
+      GENAI_GATEWAY_URL: gateway:50051
+      GENAI_GATEWAY_INSECURE: "1"
+    ports:
+      - "8502:8502"
+    depends_on:
+      gateway:
+        condition: service_started
 
 volumes:
   postgres_data:
