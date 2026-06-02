@@ -72,9 +72,10 @@ axe-suite up --vector-db qdrant --local-embedding
 uv run python examples/live_stack_smoke.py
 ```
 
-이 script는 SDK가 Gateway를 통해 Data Service와 Model Service에 접근하고, local embedding 결과가
-선택된 VectorDB backend에 저장/검색되는지 확인한다. 출력에는 indexed document, question, retrieved
-response가 포함된다. 기본적으로 test index를 삭제하며, 수동 확인이 필요하면 `--keep-index`를 사용한다.
+이 script는 기본적으로 `chapter-5.md`를 index하여 SDK가 Gateway를 통해 Data Service와 Model
+Service에 접근하고, local embedding 결과가 선택된 VectorDB backend에 저장/검색되는지 확인한다.
+출력에는 indexed document preview, question, retrieved response가 포함된다. 기본적으로 test index를
+삭제하며, 수동 확인이 필요하면 `--keep-index`를 사용한다.
 
 ## 관련 문서
 

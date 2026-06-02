@@ -231,9 +231,9 @@ Run the live Docker stack smoke test after `axe-suite up`:
 uv run python examples/live_stack_smoke.py
 ```
 
-This creates a disposable index, ingests one text document, searches it through
-Gateway, prints the indexed document, question, and retrieved response, and
-removes the index unless `--keep-index` is passed.
+This creates a disposable index, ingests `chapter-5.md`, searches it through
+Gateway, prints the indexed document preview, question, and retrieved response,
+and removes the index unless `--keep-index` is passed.
 
 ```mermaid
 flowchart LR
