@@ -158,6 +158,22 @@ The researched local embedding aliases are `minilm`, `bge-m3`, `qwen3-0.6b`,
 `e5-large`, and `arctic-l-v2`. `minilm` remains the fast smoke-test default;
 `bge-m3` is the first recommended local model for Korean/multilingual RAG.
 
+The local TEI container uses conservative CPU-friendly defaults:
+
+```text
+LOCAL_EMBEDDING_TOKENIZATION_WORKERS=1
+LOCAL_EMBEDDING_MAX_CONCURRENT_REQUESTS=1
+LOCAL_EMBEDDING_MAX_BATCH_TOKENS=2048
+LOCAL_EMBEDDING_MAX_CLIENT_BATCH_SIZE=1
+```
+
+Model Service also uses `LOCAL_EMBEDDING_MAX_CLIENT_BATCH_SIZE` to split local
+embedding requests before calling TEI, so the client request size stays aligned
+with the TEI server limit.
+
+Override them when the host has more memory or when running on production-like
+Linux/GPU infrastructure.
+
 Operational commands:
 
 ```bash
@@ -239,7 +255,8 @@ This creates a disposable index, ingests `chapter-5.md`, searches it through
 Gateway, prints the indexed document's first 10 lines, question, and retrieved response,
 and removes the index unless `--keep-index` is passed. The script resolves the
 running embedding model from Model Service by default, so it follows the model
-selected by `axe-suite up --local-embedding-model`.
+selected by `axe-suite up --local-embedding-model`. The default ingest timeout is
+long enough for CPU Qwen smoke runs; pass `--timeout` to tune it.
 
 If a custom embedding model is not in the known dimension map, pass the dimensions:
 

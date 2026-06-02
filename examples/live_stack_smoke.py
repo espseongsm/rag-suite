@@ -79,7 +79,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--timeout",
         type=float,
-        default=120.0,
+        default=300.0,
         help="Seconds to wait for ingestion to complete.",
     )
     parser.add_argument("--chunk-size", type=int, default=900, help="Index chunk size.")

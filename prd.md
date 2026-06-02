@@ -76,6 +76,7 @@ uv run python examples/live_stack_smoke.py
 Service에 접근하고, local embedding 결과가 선택된 VectorDB backend에 저장/검색되는지 확인한다.
 embedding model은 hard-code하지 않고 Model Service의 `ListEmbeddingModels` 응답에서 우선 local
 provider model을 선택한다. 알 수 없는 custom model은 `--embedding-dimensions`를 명시해야 한다.
+Qwen CPU smoke run처럼 embedding이 느린 경우를 위해 ingest timeout 기본값은 300초로 둔다.
 출력에는 indexed document 첫 10 lines, question, retrieved response가 포함된다. 검색 결과는 step
 number와 헷갈리지 않도록 `Result N:` 형식으로 표시한다. 기본적으로 test index를 삭제하며, 수동 확인이
 필요하면 `--keep-index`를 사용한다.
@@ -118,6 +119,12 @@ container를 함께 띄울지 물어본다. VectorDB 선택지는 LanceDB를 제
 local embedding container를 선택하면 research 문서의 local 후보 중 `minilm`, `bge-m3`,
 `qwen3-0.6b`, `e5-large`, `arctic-l-v2` alias를 선택할 수 있다. `minilm`은 빠른 plumbing smoke
 기본값으로 유지하고, 실제 한국어/다국어 RAG 1차 local 후보는 `bge-m3`로 둔다.
+Mac/CPU Docker 환경에서 Qwen/BGE 같은 큰 embedding model warmup이 OOM으로 실패할 수 있으므로
+local TEI container는 conservative default
+`LOCAL_EMBEDDING_TOKENIZATION_WORKERS=1`, `LOCAL_EMBEDDING_MAX_CONCURRENT_REQUESTS=1`,
+`LOCAL_EMBEDDING_MAX_BATCH_TOKENS=2048`, `LOCAL_EMBEDDING_MAX_CLIENT_BATCH_SIZE=1`로 시작한다.
+Model Service는 같은 client batch size에 맞춰 local embedding request를 split한다. production-like
+Linux/GPU 환경에서는 env override로 높인다.
 
 VectorDB adapter 구조는 `Postgres state store + selected vector backend`로 둔다. Postgres는
 index metadata, document metadata, ingest jobs, keyword-search text를 유지하고, 선택된 backend는

@@ -51,6 +51,16 @@ from services.shared.servicer_base import BaseServicer
 from services.shared.traced_service import TraceContext, TracedService
 
 
+def _positive_int_env(name: str) -> Optional[int]:
+    value = os.getenv(name)
+    if not value:
+        return None
+    parsed = int(value)
+    if parsed < 1:
+        raise ValueError(f"{name} must be at least 1")
+    return parsed
+
+
 class ModelService(models_pb2_grpc.ModelServiceServicer, BaseServicer, TracedService):
     """The Model Service.
 
@@ -458,6 +468,7 @@ class ModelService(models_pb2_grpc.ModelServiceServicer, BaseServicer, TracedSer
                 self._embedding_providers["local"] = LocalEmbeddingProvider(
                     base_url=local_url,
                     model_names=model_names,
+                    request_batch_size=_positive_int_env("LOCAL_EMBEDDING_REQUEST_BATCH_SIZE"),
                 )
 
         openai_key = os.getenv("OPENAI_API_KEY")

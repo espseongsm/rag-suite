@@ -20,6 +20,13 @@
   `minilm`, 한국어/다국어 RAG 1차 local 후보는 `bge-m3`로 정리했다.
 - `examples/live_stack_smoke.py`가 default embedding model을 hard-code하지 않고 Model Service의
   `ListEmbeddingModels`에서 running embedding model을 선택하도록 수정했다.
+- Mac/CPU Docker에서 Qwen/BGE embedding warmup OOM을 줄이기 위해 local TEI container의
+  tokenization workers, concurrent requests, batch tokens, client batch size를 conservative env
+  defaults로 조정했다.
+- Model Service local embedding provider가 TEI `max-client-batch-size`에 맞춰 `/embed` 요청을
+  작은 batch로 split하도록 수정했다.
+- Qwen CPU smoke run이 sequential local embedding으로 120초를 넘길 수 있어 live smoke ingest timeout
+  기본값을 300초로 조정했다.
 
 ### Files Changed
 
