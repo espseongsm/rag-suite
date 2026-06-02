@@ -14,6 +14,8 @@
 - 실행 중인 Docker stack을 대상으로 SDK, Gateway, Data, Model, VectorDB 경로를 검증하는
   `examples/live_stack_smoke.py`를 추가하고 `chapter-5.md`의 first 10 lines, question,
   retrieved response를 출력하도록 했다.
+- live smoke output에서 step number와 search result number가 헷갈리지 않도록 검색 결과를 `Result N:`
+  형식으로 표시했다.
 
 ### Files Changed
 

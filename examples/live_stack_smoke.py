@@ -120,7 +120,7 @@ def print_results(results: list[SearchResult]) -> None:
 
     print(f"Retrieved response(s): {len(results)}")
     for index, result in enumerate(results, start=1):
-        print(f"\n[{index}] score={result.score:.4f} document={result.document_id}")
+        print(f"\nResult {index}: score={result.score:.4f} document={result.document_id}")
         if result.metadata:
             metadata = ", ".join(f"{key}={value}" for key, value in sorted(result.metadata.items()))
             print(f"metadata: {metadata}")
