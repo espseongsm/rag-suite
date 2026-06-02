@@ -99,12 +99,13 @@ def print_results(results: list[SearchResult]) -> None:
     if not results:
         raise RuntimeError("search returned no results")
 
-    print(f"Search returned {len(results)} result(s):")
+    print(f"Retrieved response(s): {len(results)}")
     for index, result in enumerate(results, start=1):
         print(f"\n[{index}] score={result.score:.4f} document={result.document_id}")
         if result.metadata:
             metadata = ", ".join(f"{key}={value}" for key, value in sorted(result.metadata.items()))
             print(f"metadata: {metadata}")
+        print("response text:")
         print(result.text)
 
 
@@ -138,6 +139,9 @@ def run_smoke(args: argparse.Namespace) -> int:
         created_index = True
 
         print("[3] Ingesting smoke document...")
+        print("    filename: live_stack_smoke.txt")
+        print("    indexed document:")
+        print(f"    {SMOKE_DOCUMENT}")
         job = platform.data.ingest(
             index_name=args.index,
             filename="live_stack_smoke.txt",
@@ -148,7 +152,9 @@ def run_smoke(args: argparse.Namespace) -> int:
         completed = wait_for_ingest(platform, job.job_id, args.timeout)
         print(f"    completed: job={completed.job_id} document={completed.document_id}")
 
-        print("[4] Searching...")
+        mode = "hybrid" if args.hybrid else "vector"
+        print(f"[4] Asking question ({mode} search)...")
+        print(f"    question: {args.question}")
         search_fn = platform.data.hybrid_search if args.hybrid else platform.data.search
         results = search_fn(args.index, query=args.question, top_k=3)
         print_results(results)

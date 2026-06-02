@@ -232,7 +232,8 @@ uv run python examples/live_stack_smoke.py
 ```
 
 This creates a disposable index, ingests one text document, searches it through
-Gateway, and removes the index unless `--keep-index` is passed.
+Gateway, prints the indexed document, question, and retrieved response, and
+removes the index unless `--keep-index` is passed.
 
 ```mermaid
 flowchart LR
