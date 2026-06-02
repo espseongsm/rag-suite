@@ -63,6 +63,19 @@ GitHub Actions workflow를 codecheck gate로 사용한다. Pull request와 `main
 5. `docker compose config --quiet`
 6. `uv run python main.py --help`
 
+## Live Stack Smoke Test
+
+실행 중인 Docker stack은 `examples/live_stack_smoke.py`로 end-to-end 확인한다.
+
+```bash
+axe-suite up --vector-db qdrant --local-embedding
+uv run python examples/live_stack_smoke.py
+```
+
+이 script는 SDK가 Gateway를 통해 Data Service와 Model Service에 접근하고, local embedding 결과가
+선택된 VectorDB backend에 저장/검색되는지 확인한다. 기본적으로 test index를 삭제하며,
+수동 확인이 필요하면 `--keep-index`를 사용한다.
+
 ## 관련 문서
 
 - [PDF RAG MVP 인터페이스 설계서](pdf-rag-mvp-interface-design.md)

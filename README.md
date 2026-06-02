@@ -225,6 +225,25 @@ then verifies Python SDK calls route through Gateway into Data and Model service
 With Docker running, the same SDK path can be checked against the live stack at
 `localhost:50051`.
 
+Run the live Docker stack smoke test after `axe-suite up`:
+
+```bash
+uv run python examples/live_stack_smoke.py
+```
+
+This creates a disposable index, ingests one text document, searches it through
+Gateway, and removes the index unless `--keep-index` is passed.
+
+```mermaid
+flowchart LR
+    Script["examples/live_stack_smoke.py"] --> SDK["GenAIPlatform SDK"]
+    SDK --> Gateway["Gateway :50051"]
+    Gateway --> Data["Data Service"]
+    Data --> Models["Model Service"]
+    Models --> Embedding["embedding-local"]
+    Data --> VectorDB["selected VectorDB"]
+```
+
 ## Remaining Services
 
 ```text

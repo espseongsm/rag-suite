@@ -11,6 +11,8 @@
 - `prd.md`의 실행 경로를 nested directory 기준에서 repository root 기준으로 갱신하고 현재 architecture flow를 추가했다.
 - flattened root repository에 맞게 GitHub Actions CI workflow를 갱신했다.
 - CI에서 dependency sync, ruff lint/format, pytest, Docker Compose config, CLI smoke test를 수행하도록 정리했다.
+- 실행 중인 Docker stack을 대상으로 SDK, Gateway, Data, Model, VectorDB 경로를 검증하는
+  `examples/live_stack_smoke.py`를 추가했다.
 
 ### Files Changed
 
@@ -29,6 +31,8 @@
 - `daily-development-report.md`
 - `.github/workflows/ci.yml`
 - `tests/test_cli.py`
+- `examples/live_stack_smoke.py`
+- `README.md`
 
 ### Verification
 
@@ -38,6 +42,7 @@
 - `docker compose config --quiet`
 - `uv run python main.py --help`
 - `uv run ruff format --check .`
+- `uv run python examples/live_stack_smoke.py`
 
 ## 2026-05-29
 
