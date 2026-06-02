@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 from services.data.external_vector_store import ExternalVectorStore
-
 from services.data.models import Chunk, Index, IndexConfig, SearchResult
 
 

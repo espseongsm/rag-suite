@@ -12,6 +12,7 @@
 - flattened root repository에 맞게 GitHub Actions CI workflow를 갱신했다.
 - CI에서 dependency sync, ruff lint/format, pytest, Docker Compose config, CLI smoke test를 수행하도록 정리했다.
 - PR CI lint가 통과하도록 `tests/test_external_vector_store.py` import grouping을 Ruff 기준으로 정리했다.
+- Ruff import grouping이 macOS/Linux에서 일관되도록 `services`를 first-party package로 명시했다.
 - root runtime `data/`만 ignore하도록 `.gitignore`를 조정해 `services/data/` source module이 누락되지 않게 했다.
 - `ExternalVectorStore`와 external vector backend contract module을 tracking 대상에 포함했다.
 - `.gitignore` 조정 후 CI format gate가 검사하는 `pgvector_store.py` f-string formatting을 Ruff 기준으로 정리했다.
