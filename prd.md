@@ -113,6 +113,9 @@ platform 실행은 Docker Compose 직접 실행 대신 얇은 CLI wrapper를 기
 container를 함께 띄울지 물어본다. VectorDB 선택지는 LanceDB를 제외한 7개
 `Qdrant`, `Chroma`, `Milvus`, `Weaviate`, `pgvector`, `OpenSearch`, `Azure AI Search`를
 보여준다. LanceDB는 OSS 사용 방식이 embedded-first라 별도 service container 후보에서 제외한다.
+local embedding container를 선택하면 research 문서의 local 후보 중 `minilm`, `bge-m3`,
+`qwen3-0.6b`, `e5-large`, `arctic-l-v2` alias를 선택할 수 있다. `minilm`은 빠른 plumbing smoke
+기본값으로 유지하고, 실제 한국어/다국어 RAG 1차 local 후보는 `bge-m3`로 둔다.
 
 VectorDB adapter 구조는 `Postgres state store + selected vector backend`로 둔다. Postgres는
 index metadata, document metadata, ingest jobs, keyword-search text를 유지하고, 선택된 backend는

@@ -16,6 +16,8 @@
   retrieved response를 출력하도록 했다.
 - live smoke output에서 step number와 search result number가 헷갈리지 않도록 검색 결과를 `Result N:`
   형식으로 표시했다.
+- `axe-suite up`에 researched local embedding model alias 선택을 추가했다. 빠른 smoke 기본값은
+  `minilm`, 한국어/다국어 RAG 1차 local 후보는 `bge-m3`로 정리했다.
 
 ### Files Changed
 

@@ -151,8 +151,12 @@ because the selected TEI image does not publish a native arm64 manifest.
 Override the local embedding model:
 
 ```bash
-axe-suite up --local-embedding-model BAAI/bge-small-en-v1.5
+axe-suite up --local-embedding-model bge-m3
 ```
+
+The researched local embedding aliases are `minilm`, `bge-m3`, `qwen3-0.6b`,
+`e5-large`, and `arctic-l-v2`. `minilm` remains the fast smoke-test default;
+`bge-m3` is the first recommended local model for Korean/multilingual RAG.
 
 Operational commands:
 

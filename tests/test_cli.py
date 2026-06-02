@@ -89,6 +89,33 @@ def test_up_can_include_local_embedding_profile(monkeypatch):
     assert env["LOCAL_EMBEDDING_MODEL"] == "BAAI/bge-small-en-v1.5"
 
 
+def test_up_can_use_researched_local_embedding_alias(monkeypatch):
+    calls = []
+
+    def fake_run(command, env=None):
+        calls.append((command, env))
+        return Completed()
+
+    monkeypatch.setattr(cli.subprocess, "run", fake_run)
+
+    assert (
+        cli.main(
+            [
+                "up",
+                "--local-embedding-model",
+                "bge-m3",
+                "--vector-db",
+                "pgvector",
+            ]
+        )
+        == 0
+    )
+
+    command, env = calls[0]
+    assert "local-embedding" in command
+    assert env["LOCAL_EMBEDDING_MODEL"] == "BAAI/bge-m3"
+
+
 def test_up_can_include_vector_db_profile(monkeypatch):
     calls = []
 
@@ -150,6 +177,32 @@ def test_vector_db_prompt_accepts_number(monkeypatch):
     monkeypatch.setattr("builtins.input", lambda prompt: "5")
 
     assert cli._ask_vector_db() == "pgvector"
+
+
+def test_local_embedding_model_prompt_accepts_number(monkeypatch):
+    monkeypatch.setattr(cli.sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda prompt: "2")
+
+    assert cli._ask_local_embedding_model() == "BAAI/bge-m3"
+
+
+def test_up_prompt_can_select_local_embedding_model(monkeypatch):
+    calls = []
+
+    def fake_run(command, env=None):
+        calls.append((command, env))
+        return Completed()
+
+    monkeypatch.setattr(cli.subprocess, "run", fake_run)
+    monkeypatch.setattr(cli, "_ask_local_embedding", lambda: True)
+    monkeypatch.setattr(cli, "_ask_vector_db", lambda: "pgvector")
+    monkeypatch.setattr(cli, "_ask_local_embedding_model", lambda: "BAAI/bge-m3")
+
+    assert cli.main(["up"]) == 0
+
+    command, env = calls[0]
+    assert "local-embedding" in command
+    assert env["LOCAL_EMBEDDING_MODEL"] == "BAAI/bge-m3"
 
 
 def test_down_can_remove_volumes(monkeypatch):
