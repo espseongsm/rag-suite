@@ -18,6 +18,8 @@
   형식으로 표시했다.
 - `axe-suite up`에 researched local embedding model alias 선택을 추가했다. 빠른 smoke 기본값은
   `minilm`, 한국어/다국어 RAG 1차 local 후보는 `bge-m3`로 정리했다.
+- `examples/live_stack_smoke.py`가 default embedding model을 hard-code하지 않고 Model Service의
+  `ListEmbeddingModels`에서 running embedding model을 선택하도록 수정했다.
 
 ### Files Changed
 

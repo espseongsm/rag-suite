@@ -16,6 +16,7 @@ import argparse
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -24,11 +25,19 @@ from services.data.models import IndexConfig, IngestJob, SearchResult
 
 DEFAULT_GATEWAY_URL = "localhost:50051"
 DEFAULT_INDEX_NAME = "chapter-5-live-smoke"
-DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-DEFAULT_EMBEDDING_DIMENSIONS = 384
 DEFAULT_DOCUMENT_PATH = Path(__file__).resolve().parents[1] / "chapter-5.md"
 DOCUMENT_PREVIEW_LINES = 10
 SMOKE_QUESTION = "What does the Data Service provide for grounding AI applications?"
+KNOWN_EMBEDDING_DIMENSIONS = {
+    "sentence-transformers/all-MiniLM-L6-v2": 384,
+    "BAAI/bge-m3": 1024,
+    "Qwen/Qwen3-Embedding-0.6B": 1024,
+    "intfloat/multilingual-e5-large": 1024,
+    "Snowflake/snowflake-arctic-embed-l-v2.0": 1024,
+    "text-embedding-3-small": 1536,
+    "text-embedding-3-large": 3072,
+    "text-embedding-ada-002": 1536,
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -47,14 +56,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--embedding-model",
-        default=DEFAULT_EMBEDDING_MODEL,
-        help="Embedding model registered in the running Model Service.",
+        default=None,
+        help="Override the embedding model. Defaults to the running Model Service model.",
     )
     parser.add_argument(
         "--embedding-dimensions",
         type=int,
-        default=DEFAULT_EMBEDDING_DIMENSIONS,
-        help="Embedding vector dimensions for the index.",
+        default=None,
+        help="Override embedding vector dimensions for the index.",
     )
     parser.add_argument(
         "--document",
@@ -102,6 +111,56 @@ def first_lines(content: bytes, line_count: int) -> list[str]:
     return text.splitlines()[:line_count]
 
 
+def _format_embedding_models(models: list[Any]) -> str:
+    return ", ".join(f"{model.name} ({model.provider})" for model in models) or "none"
+
+
+def _select_embedding_model(models: list[Any]) -> Any:
+    for model in models:
+        if model.provider == "local":
+            return model
+    return models[0]
+
+
+def resolve_embedding_config(
+    platform: GenAIPlatform,
+    embedding_model: str | None,
+    embedding_dimensions: int | None,
+) -> tuple[str, int, list[Any]]:
+    available_models = platform.models.list_embedding_models()
+
+    if embedding_model:
+        if not available_models:
+            raise RuntimeError(
+                "No embedding models are available from Model Service. "
+                "Start the stack with --local-embedding-model or configure an embedding provider."
+            )
+        model_name = embedding_model
+        available_model_names = {model.name for model in available_models}
+        if model_name not in available_model_names:
+            raise RuntimeError(
+                f"Requested embedding model '{model_name}' is not available from Model Service. "
+                f"Available embedding models: {_format_embedding_models(available_models)}"
+            )
+    else:
+        if not available_models:
+            raise RuntimeError(
+                "No embedding models are available from Model Service. "
+                "Start the stack with --local-embedding-model or configure an embedding provider."
+            )
+        model_name = _select_embedding_model(available_models).name
+
+    dimensions = embedding_dimensions or KNOWN_EMBEDDING_DIMENSIONS.get(model_name)
+    if dimensions is None:
+        raise RuntimeError(
+            f"Unknown embedding dimensions for model '{model_name}'. "
+            "Pass --embedding-dimensions explicitly. "
+            f"Available embedding models: {_format_embedding_models(available_models)}"
+        )
+
+    return model_name, dimensions, available_models
+
+
 def wait_for_ingest(platform: GenAIPlatform, job_id: str, timeout: float) -> IngestJob:
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -131,12 +190,18 @@ def print_results(results: list[SearchResult]) -> None:
 def run_smoke(args: argparse.Namespace) -> int:
     platform = GenAIPlatform(gateway_url=args.gateway_url)
     created_index = False
+    embedding_model, embedding_dimensions, available_embedding_models = resolve_embedding_config(
+        platform=platform,
+        embedding_model=args.embedding_model,
+        embedding_dimensions=args.embedding_dimensions,
+    )
     document_path = args.document.expanduser().resolve()
     document_content = read_document(document_path)
 
     print(f"Gateway     : {args.gateway_url}")
     print(f"Index       : {args.index}")
-    print(f"Embeddings  : {args.embedding_model} ({args.embedding_dimensions} dims)")
+    print(f"Embeddings  : {embedding_model} ({embedding_dimensions} dims)")
+    print(f"Available   : {_format_embedding_models(available_embedding_models)}")
     print(f"Document    : {document_path}")
     print(f"Size        : {len(document_content)} bytes")
 
@@ -151,8 +216,8 @@ def run_smoke(args: argparse.Namespace) -> int:
         platform.data.create_index(
             IndexConfig(
                 name=args.index,
-                embedding_model=args.embedding_model,
-                embedding_dimensions=args.embedding_dimensions,
+                embedding_model=embedding_model,
+                embedding_dimensions=embedding_dimensions,
                 chunking_strategy="recursive",
                 chunk_size=args.chunk_size,
                 chunk_overlap=args.chunk_overlap,

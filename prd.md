@@ -74,6 +74,8 @@ uv run python examples/live_stack_smoke.py
 
 이 script는 기본적으로 `chapter-5.md`를 index하여 SDK가 Gateway를 통해 Data Service와 Model
 Service에 접근하고, local embedding 결과가 선택된 VectorDB backend에 저장/검색되는지 확인한다.
+embedding model은 hard-code하지 않고 Model Service의 `ListEmbeddingModels` 응답에서 우선 local
+provider model을 선택한다. 알 수 없는 custom model은 `--embedding-dimensions`를 명시해야 한다.
 출력에는 indexed document 첫 10 lines, question, retrieved response가 포함된다. 검색 결과는 step
 number와 헷갈리지 않도록 `Result N:` 형식으로 표시한다. 기본적으로 test index를 삭제하며, 수동 확인이
 필요하면 `--keep-index`를 사용한다.

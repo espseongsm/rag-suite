@@ -237,15 +237,26 @@ uv run python examples/live_stack_smoke.py
 
 This creates a disposable index, ingests `chapter-5.md`, searches it through
 Gateway, prints the indexed document's first 10 lines, question, and retrieved response,
-and removes the index unless `--keep-index` is passed.
+and removes the index unless `--keep-index` is passed. The script resolves the
+running embedding model from Model Service by default, so it follows the model
+selected by `axe-suite up --local-embedding-model`.
+
+If a custom embedding model is not in the known dimension map, pass the dimensions:
+
+```bash
+uv run python examples/live_stack_smoke.py \
+  --embedding-model your/model \
+  --embedding-dimensions 768
+```
 
 ```mermaid
 flowchart LR
     Script["examples/live_stack_smoke.py"] --> SDK["GenAIPlatform SDK"]
     SDK --> Gateway["Gateway :50051"]
     Gateway --> Data["Data Service"]
-    Data --> Models["Model Service"]
-    Models --> Embedding["embedding-local"]
+    Script --> ModelsList["Model Service ListEmbeddingModels"]
+    Data --> Models["Model Service Embed"]
+    Models --> Embedding["selected embedding-local model"]
     Data --> VectorDB["selected VectorDB"]
 ```
 
