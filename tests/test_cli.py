@@ -213,9 +213,7 @@ def test_ask_can_use_hybrid_search(monkeypatch, capsys):
 
     assert cli.main(["ask", "pgvector는 별도 docker야?", "--hybrid", "--top-k", "1"]) == 0
 
-    assert calls == [
-        ("hybrid", "rag-pipeline-research-summary", "pgvector는 별도 docker야?", 1)
-    ]
+    assert calls == [("hybrid", "rag-pipeline-research-summary", "pgvector는 별도 docker야?", 1)]
     out = capsys.readouterr().out
     assert "mode: hybrid" in out
     assert "pgvector" in out

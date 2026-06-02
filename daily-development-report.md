@@ -9,6 +9,8 @@
 - `genai_platform/`, `services/`, `proto/`, `tests/`, Docker/Compose 설정을 root로 이동해 future development path를 단순화했다.
 - root `main.py`를 `genai_platform.cli:main`을 호출하는 얇은 entry point로 정리했다.
 - `prd.md`의 실행 경로를 nested directory 기준에서 repository root 기준으로 갱신하고 현재 architecture flow를 추가했다.
+- flattened root repository에 맞게 GitHub Actions CI workflow를 갱신했다.
+- CI에서 dependency sync, ruff lint/format, pytest, Docker Compose config, CLI smoke test를 수행하도록 정리했다.
 
 ### Files Changed
 
@@ -25,14 +27,17 @@
 - `docker-compose.yml`
 - `prd.md`
 - `daily-development-report.md`
+- `.github/workflows/ci.yml`
+- `tests/test_cli.py`
 
 ### Verification
 
-- `uv sync`
+- `uv sync --frozen --extra postgres`
 - `uv run ruff check`
 - `uv run pytest -q` (`222 passed, 43 skipped`)
 - `docker compose config --quiet`
 - `uv run python main.py --help`
+- `uv run ruff format --check .`
 
 ## 2026-05-29
 

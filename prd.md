@@ -52,6 +52,17 @@ axe-suite down
 axe-suite ask "VectorDB 후보 중에 뭐가 제일 단순해?" --top-k 3
 ```
 
+## CI / Codecheck
+
+GitHub Actions workflow를 codecheck gate로 사용한다. Pull request와 `main` push에서 다음 검증을 수행한다.
+
+1. `uv sync --frozen --extra postgres`
+2. `uv run ruff check`
+3. `uv run ruff format --check .`
+4. `uv run pytest -q`
+5. `docker compose config --quiet`
+6. `uv run python main.py --help`
+
 ## 관련 문서
 
 - [PDF RAG MVP 인터페이스 설계서](pdf-rag-mvp-interface-design.md)
