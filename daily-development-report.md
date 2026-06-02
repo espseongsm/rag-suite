@@ -11,6 +11,10 @@
 - `prd.md`의 실행 경로를 nested directory 기준에서 repository root 기준으로 갱신하고 현재 architecture flow를 추가했다.
 - flattened root repository에 맞게 GitHub Actions CI workflow를 갱신했다.
 - CI에서 dependency sync, ruff lint/format, pytest, Docker Compose config, CLI smoke test를 수행하도록 정리했다.
+- PR CI lint가 통과하도록 `tests/test_external_vector_store.py` import grouping을 Ruff 기준으로 정리했다.
+- root runtime `data/`만 ignore하도록 `.gitignore`를 조정해 `services/data/` source module이 누락되지 않게 했다.
+- `ExternalVectorStore`와 external vector backend contract module을 tracking 대상에 포함했다.
+- `.gitignore` 조정 후 CI format gate가 검사하는 `pgvector_store.py` f-string formatting을 Ruff 기준으로 정리했다.
 
 ### Files Changed
 
@@ -29,6 +33,11 @@
 - `daily-development-report.md`
 - `.github/workflows/ci.yml`
 - `tests/test_cli.py`
+- `tests/test_external_vector_store.py`
+- `.gitignore`
+- `services/data/external_vector_store.py`
+- `services/data/pgvector_store.py`
+- `services/data/vector_backends.py`
 
 ### Verification
 
@@ -38,6 +47,7 @@
 - `docker compose config --quiet`
 - `uv run python main.py --help`
 - `uv run ruff format --check .`
+- `UV_PYTHON=3.12 uv run ruff check`
 
 ## 2026-05-29
 

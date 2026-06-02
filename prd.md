@@ -63,6 +63,9 @@ GitHub Actions workflow를 codecheck gate로 사용한다. Pull request와 `main
 5. `docker compose config --quiet`
 6. `uv run python main.py --help`
 
+Ruff import grouping issues are resolved with `uv run ruff check --fix <path>` before rerunning the CI lint gate.
+Runtime artifacts under root `/data/` are ignored, while `services/data/` remains trackable source code for Data Service modules.
+
 ## 관련 문서
 
 - [PDF RAG MVP 인터페이스 설계서](pdf-rag-mvp-interface-design.md)

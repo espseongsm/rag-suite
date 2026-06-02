@@ -268,7 +268,7 @@ class PgvectorStore(VectorStore):
                 SELECT chunk_id, document_id, chunk_text, metadata,
                        row_number() OVER (ORDER BY embedding <=> %s::vector) AS rank
                   FROM chunks
-                 WHERE {' AND '.join(vector_where)}
+                 WHERE {" AND ".join(vector_where)}
                  ORDER BY embedding <=> %s::vector
                  LIMIT %s
             ),
@@ -278,7 +278,7 @@ class PgvectorStore(VectorStore):
                            ORDER BY ts_rank(search_vector, plainto_tsquery('english', %s)) DESC
                        ) AS rank
                   FROM chunks
-                 WHERE {' AND '.join(keyword_where)}
+                 WHERE {" AND ".join(keyword_where)}
                  ORDER BY ts_rank(search_vector, plainto_tsquery('english', %s)) DESC
                  LIMIT %s
             ),
