@@ -4,19 +4,10 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
-      - run: uvx ruff check .
-      - run: uvx ruff format --check .
-
-  test:
+  codecheck:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -32,13 +23,30 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+    env:
+      DB_TEST_URL: postgresql://postgres:postgres@localhost:5432/genai_platform_test
     steps:
       - uses: actions/checkout@v4
+
       - uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
           python-version: "3.12"
-      - run: uv sync --frozen --extra postgres --extra dashboards
-      - run: uv run pytest tests/ -v
-        env:
-          DB_TEST_URL: postgresql://postgres:postgres@localhost:5432/genai_platform_test
+
+      - name: Install dependencies
+        run: uv sync --frozen --extra postgres
+
+      - name: Lint
+        run: uv run ruff check
+
+      - name: Format check
+        run: uv run ruff format --check .
+
+      - name: Test
+        run: uv run pytest -q
+
+      - name: Validate Docker Compose
+        run: docker compose config --quiet
+
+      - name: CLI smoke test
+        run: uv run python main.py --help
