@@ -38,6 +38,7 @@ htmlcov/
 .venv
 env/
 venv/
+data/
 
 # OS
 .DS_Store

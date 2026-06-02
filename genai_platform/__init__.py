@@ -1,11 +1,6 @@
-"""
-GenAI Platform SDK
-
-A platform for building production-ready GenAI applications.
-"""
+"""Data-focused GenAI Platform SDK."""
 
 from .platform import GenAIPlatform
-from .workflow import workflow
 
-__all__ = ["GenAIPlatform", "workflow"]
+__all__ = ["GenAIPlatform"]
 __version__ = "0.1.0"

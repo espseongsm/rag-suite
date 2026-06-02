@@ -1,8 +1,8 @@
 """
 gRPC retry interceptor for SDK service calls (Listings 8.13–8.14).
 
-Wraps every outgoing gRPC call from a service client (`SessionClient`,
-`ModelClient`, `WorkflowClient`, …) with exponential-backoff retries on a
+Wraps every outgoing gRPC call from a service client (`ModelClient`,
+`DataClient`) with exponential-backoff retries on a
 small set of codes that indicate transient infrastructure trouble.
 
 Retryable codes (Listing 8.13):

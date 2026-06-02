@@ -83,6 +83,18 @@ class VectorStore(ABC):
         """Find chunks matching the query by keyword (Listing 5.21)."""
         raise NotImplementedError(f"{type(self).__name__} does not support keyword search")
 
+    def hybrid_search(
+        self,
+        index_name: str,
+        query: str,
+        query_embedding: List[float],
+        top_k: int = 5,
+        metadata_filters: Optional[Dict[str, str]] = None,
+        score_threshold: Optional[float] = None,
+    ) -> List[SearchResult]:
+        """Run backend-native hybrid search when the store supports it."""
+        raise NotImplementedError(f"{type(self).__name__} does not support native hybrid search")
+
     # ------------------------------------------------------------------ indexes
 
     @abstractmethod
@@ -391,4 +403,36 @@ def create_vector_store() -> VectorStore:
         from services.data.pgvector_store import PgvectorStore
 
         return PgvectorStore(os.getenv("DB_CONNECTION_STRING", ""))
+    if store_type == "qdrant":
+        from services.data.backends.qdrant import QdrantBackend
+        from services.data.external_vector_store import ExternalVectorStore
+
+        return ExternalVectorStore(QdrantBackend())
+    if store_type == "chroma":
+        from services.data.backends.chroma import ChromaBackend
+        from services.data.external_vector_store import ExternalVectorStore
+
+        return ExternalVectorStore(ChromaBackend())
+    if store_type == "milvus":
+        from services.data.backends.milvus import MilvusBackend
+        from services.data.external_vector_store import ExternalVectorStore
+
+        return ExternalVectorStore(MilvusBackend())
+    if store_type == "weaviate":
+        from services.data.backends.weaviate import WeaviateBackend
+        from services.data.external_vector_store import ExternalVectorStore
+
+        return ExternalVectorStore(WeaviateBackend())
+    if store_type == "opensearch":
+        from services.data.backends.opensearch import OpenSearchBackend
+        from services.data.external_vector_store import ExternalVectorStore
+
+        return ExternalVectorStore(OpenSearchBackend())
+    if store_type == "azure-ai-search":
+        from services.data.backends.azure_ai_search import AzureAISearchBackend
+        from services.data.external_vector_store import ExternalVectorStore
+
+        return ExternalVectorStore(AzureAISearchBackend())
+    if store_type != "memory":
+        raise ValueError(f"Unknown VECTOR_STORE '{store_type}'")
     return InMemoryVectorStore()

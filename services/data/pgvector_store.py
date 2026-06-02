@@ -34,6 +34,7 @@ from services.data.models import (
     SearchResult,
 )
 from services.data.store import VectorStore
+from services.data.vector_backends import VectorRecord
 
 
 class PgvectorStore(VectorStore):
@@ -100,6 +101,30 @@ class PgvectorStore(VectorStore):
                     ),
                 )
         return len(chunks)
+
+    def insert_chunk_records(self, index_name: str, records: List[VectorRecord]) -> int:
+        """Mirror chunk text/metadata for external vector backends.
+
+        External stores own vector search, while Postgres still owns document
+        state and keyword search. Embeddings are intentionally left NULL here.
+        """
+        with self._txn() as cur:
+            for record in records:
+                cur.execute(
+                    """
+                    INSERT INTO chunks
+                        (chunk_id, document_id, index_name, chunk_text, metadata)
+                    VALUES (%s, %s, %s, %s, %s::jsonb)
+                    """,
+                    (
+                        record.chunk_id,
+                        record.document_id,
+                        index_name,
+                        record.text,
+                        json.dumps(record.metadata),
+                    ),
+                )
+        return len(records)
 
     def delete_by_document(self, index_name: str, document_id: str) -> int:
         with self._txn() as cur:
@@ -212,6 +237,95 @@ class PgvectorStore(VectorStore):
             )
             for row in rows
         ]
+
+    def hybrid_search(
+        self,
+        index_name: str,
+        query: str,
+        query_embedding: List[float],
+        top_k: int = 5,
+        metadata_filters: Optional[Dict[str, str]] = None,
+        score_threshold: Optional[float] = None,
+    ) -> List[SearchResult]:
+        limit = top_k * 2
+        vector_where = ["index_name = %s", "embedding IS NOT NULL"]
+        vector_params: list = [index_name]
+        keyword_where = [
+            "index_name = %s",
+            "search_vector @@ plainto_tsquery('english', %s)",
+        ]
+        keyword_params: list = [index_name, query]
+
+        if metadata_filters:
+            for key, value in metadata_filters.items():
+                vector_where.append("metadata->>%s = %s")
+                vector_params.extend([key, value])
+                keyword_where.append("metadata->>%s = %s")
+                keyword_params.extend([key, value])
+
+        sql = f"""
+            WITH vector_results AS (
+                SELECT chunk_id, document_id, chunk_text, metadata,
+                       row_number() OVER (ORDER BY embedding <=> %s::vector) AS rank
+                  FROM chunks
+                 WHERE {' AND '.join(vector_where)}
+                 ORDER BY embedding <=> %s::vector
+                 LIMIT %s
+            ),
+            keyword_results AS (
+                SELECT chunk_id, document_id, chunk_text, metadata,
+                       row_number() OVER (
+                           ORDER BY ts_rank(search_vector, plainto_tsquery('english', %s)) DESC
+                       ) AS rank
+                  FROM chunks
+                 WHERE {' AND '.join(keyword_where)}
+                 ORDER BY ts_rank(search_vector, plainto_tsquery('english', %s)) DESC
+                 LIMIT %s
+            ),
+            fused AS (
+                SELECT chunk_id, document_id, chunk_text, metadata,
+                       1.0::float8 / (60 + rank) AS score
+                  FROM vector_results
+                UNION ALL
+                SELECT chunk_id, document_id, chunk_text, metadata,
+                       1.0::float8 / (60 + rank) AS score
+                  FROM keyword_results
+            )
+            SELECT chunk_id, document_id, chunk_text, metadata, SUM(score) AS score
+              FROM fused
+             GROUP BY chunk_id, document_id, chunk_text, metadata
+             ORDER BY score DESC
+             LIMIT %s
+        """
+        params = (
+            [str(query_embedding)]
+            + vector_params
+            + [str(query_embedding), limit, query]
+            + keyword_params
+            + [query, limit, top_k]
+        )
+
+        with self._txn() as cur:
+            cur.execute(sql, params)
+            rows = cur.fetchall()
+
+        results = [
+            SearchResult(
+                chunk_id=row["chunk_id"],
+                document_id=row["document_id"],
+                text=row["chunk_text"],
+                metadata=(
+                    row["metadata"]
+                    if isinstance(row["metadata"], dict)
+                    else json.loads(row["metadata"])
+                ),
+                score=float(row["score"]),
+            )
+            for row in rows
+        ]
+        if score_threshold is not None:
+            results = [result for result in results if result.score >= score_threshold]
+        return results[:top_k]
 
     # ------------------------------------------------------------------ indexes
 

@@ -29,6 +29,7 @@ import grpc
 
 from proto import models_pb2, models_pb2_grpc
 from services.models.embedding_providers.base import EmbeddingProvider
+from services.models.embedding_providers.local_provider import LocalEmbeddingProvider
 from services.models.embedding_providers.openai_provider import OpenAIEmbeddingProvider
 from services.models.metrics_publisher import (
     ModelRequestMetrics,
@@ -449,6 +450,16 @@ class ModelService(models_pb2_grpc.ModelServiceServicer, BaseServicer, TracedSer
             self._providers["anthropic"] = AnthropicProvider(api_key=anthropic_key)
 
     def _initialize_embedding_providers(self) -> None:
+        local_url = os.getenv("LOCAL_EMBEDDING_URL")
+        local_models = os.getenv("LOCAL_EMBEDDING_MODELS")
+        if local_url and local_models:
+            model_names = [m.strip() for m in local_models.split(",") if m.strip()]
+            if model_names:
+                self._embedding_providers["local"] = LocalEmbeddingProvider(
+                    base_url=local_url,
+                    model_names=model_names,
+                )
+
         openai_key = os.getenv("OPENAI_API_KEY")
         if openai_key:
             self._embedding_providers["openai"] = OpenAIEmbeddingProvider(

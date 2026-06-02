@@ -111,3 +111,48 @@ class TestSearchOrchestrator:
         # it falls back gracefully
         results = orchestrator.hybrid_search(index=index, query="hello", top_k=5)
         assert len(results) >= 1
+
+    def test_hybrid_search_uses_native_backend_when_available(self):
+        class NativeHybridStore(InMemoryVectorStore):
+            def __init__(self):
+                super().__init__()
+                self.call = None
+
+            def hybrid_search(
+                self,
+                index_name,
+                query,
+                query_embedding,
+                top_k=5,
+                metadata_filters=None,
+                score_threshold=None,
+            ):
+                self.call = (index_name, query, query_embedding, top_k, metadata_filters)
+                return [
+                    SearchResult(
+                        chunk_id="native-1",
+                        document_id="doc-1",
+                        text="native",
+                        score=1.0,
+                    )
+                ]
+
+        store = NativeHybridStore()
+        embed_gen = EmbeddingGenerator(embed_fn=_fake_embed)
+        orchestrator = SearchOrchestrator(embedding_generator=embed_gen, vector_store=store)
+
+        results = orchestrator.hybrid_search(
+            index=_make_index(),
+            query="hello",
+            top_k=3,
+            metadata_filters={"dept": "eng"},
+        )
+
+        assert results[0].chunk_id == "native-1"
+        assert store.call == (
+            "test-idx",
+            "hello",
+            _fake_embed(["hello"], "fake-model")[0],
+            3,
+            {"dept": "eng"},
+        )

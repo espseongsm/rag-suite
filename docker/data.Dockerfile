@@ -11,7 +11,7 @@ COPY genai_platform/ ./genai_platform/
 COPY proto/ ./proto/
 COPY services/ ./services/
 
-RUN uv sync --frozen --no-dev --extra postgres
+RUN uv sync --frozen --no-dev --extra postgres --extra vector-dbs
 
 ENV PATH="/app/.venv/bin:$PATH"
 

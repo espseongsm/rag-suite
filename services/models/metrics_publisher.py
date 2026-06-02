@@ -1,22 +1,20 @@
-"""
-Model Service metrics publisher.
-
-Translates per-request RequestMetrics into the platform's standard
-metric format. The publisher is a thin adapter: it doesn't know
-anything about providers or models; it just maps fields to labels
-and counters/histograms.
-
-Book: "Designing AI Systems" (https://www.manning.com/books/designing-ai-systems)
-  - Listing 7.4: PlatformMetrics constants
-  - Listing 7.8: ModelServiceMetricsPublisher
-"""
+"""No-op-safe Model Service metrics publisher."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from services.observability.metrics import PlatformMetrics
 from services.shared.observability_client import ObservabilityClient
+
+
+class PlatformMetrics:
+    MODEL_REQUEST_TOTAL = "model.request.total"
+    MODEL_REQUEST_DURATION = "model.request.duration_ms"
+    MODEL_COST_USD = "model.cost_usd"
+    MODEL_TOKENS_PROMPT = "model.tokens.prompt"
+    MODEL_TOKENS_COMPLETION = "model.tokens.completion"
+    MODEL_CACHE_HITS = "model.cache_hits"
+    MODEL_FALLBACKS = "model.fallbacks"
 
 
 @dataclass
@@ -35,7 +33,7 @@ class ModelRequestMetrics:
 
 
 class ModelServiceMetricsPublisher:
-    """Publishes per-request Model Service metrics (Listing 7.8)."""
+    """Publishes per-request Model Service metrics when observability is wired."""
 
     def __init__(self, observability: ObservabilityClient) -> None:
         self.observability = observability

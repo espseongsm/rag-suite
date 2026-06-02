@@ -53,10 +53,23 @@ class SearchOrchestrator:
         metadata_filters: Optional[Dict[str, str]] = None,
         score_threshold: float = 0.0,
     ) -> List[SearchResult]:
-        """Run vector + keyword search, merge with RRF (Listing 5.23)."""
+        """Run native hybrid search when available, else merge vector + keyword."""
         query_embedding = self._embedding_generator.embed_query(
             query=query, model=index.config.embedding_model
         )
+        threshold = score_threshold if score_threshold > 0 else None
+
+        try:
+            return self._vector_store.hybrid_search(
+                index_name=index.name,
+                query=query,
+                query_embedding=query_embedding,
+                top_k=top_k,
+                metadata_filters=metadata_filters,
+                score_threshold=threshold,
+            )
+        except NotImplementedError:
+            logger.debug("Backend does not support native hybrid search; using RRF fallback")
 
         vector_results = self._vector_store.search(
             index_name=index.name,
@@ -78,8 +91,8 @@ class SearchOrchestrator:
 
         fused = reciprocal_rank_fusion(vector_results, keyword_results)
 
-        if score_threshold > 0:
-            fused = [r for r in fused if r.score >= score_threshold]
+        if threshold is not None:
+            fused = [r for r in fused if r.score >= threshold]
 
         return fused[:top_k]
 

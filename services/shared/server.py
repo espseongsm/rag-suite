@@ -17,14 +17,8 @@ import grpc.aio
 
 # Port registry to ensure unique ports across services
 SERVICE_PORTS = {
-    "sessions": 50052,
     "models": 50053,
     "data": 50054,
-    "guardrails": 50055,
-    "tools": 50056,
-    "workflow": 50058,
-    "observability": 50059,
-    "experiments": 50060,
 }
 
 
