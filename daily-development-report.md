@@ -12,7 +12,7 @@
 - flattened root repository에 맞게 GitHub Actions CI workflow를 갱신했다.
 - CI에서 dependency sync, ruff lint/format, pytest, Docker Compose config, CLI smoke test를 수행하도록 정리했다.
 - 실행 중인 Docker stack을 대상으로 SDK, Gateway, Data, Model, VectorDB 경로를 검증하는
-  `examples/live_stack_smoke.py`를 추가하고 `chapter-5.md`의 document preview, question,
+  `examples/live_stack_smoke.py`를 추가하고 `chapter-5.md`의 first 10 lines, question,
   retrieved response를 출력하도록 했다.
 
 ### Files Changed

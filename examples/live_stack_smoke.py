@@ -27,6 +27,7 @@ DEFAULT_INDEX_NAME = "chapter-5-live-smoke"
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 DEFAULT_EMBEDDING_DIMENSIONS = 384
 DEFAULT_DOCUMENT_PATH = Path(__file__).resolve().parents[1] / "chapter-5.md"
+DOCUMENT_PREVIEW_LINES = 10
 SMOKE_QUESTION = "What does the Data Service provide for grounding AI applications?"
 
 
@@ -75,12 +76,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--chunk-size", type=int, default=900, help="Index chunk size.")
     parser.add_argument("--chunk-overlap", type=int, default=120, help="Index chunk overlap.")
     parser.add_argument(
-        "--document-preview-chars",
-        type=int,
-        default=700,
-        help="Characters of the indexed document to print.",
-    )
-    parser.add_argument(
         "--keep-index",
         action="store_true",
         help="Leave the smoke index in the running backend for manual inspection.",
@@ -102,12 +97,9 @@ def read_document(path: Path) -> bytes:
     return document_path.read_bytes()
 
 
-def preview_text(content: bytes, max_chars: int) -> str:
+def first_lines(content: bytes, line_count: int) -> list[str]:
     text = content.decode("utf-8", errors="replace")
-    compact = " ".join(text.split())
-    if len(compact) <= max_chars:
-        return compact
-    return compact[: max_chars - 3].rstrip() + "..."
+    return text.splitlines()[:line_count]
 
 
 def wait_for_ingest(platform: GenAIPlatform, job_id: str, timeout: float) -> IngestJob:
@@ -172,8 +164,12 @@ def run_smoke(args: argparse.Namespace) -> int:
         print("[3] Ingesting smoke document...")
         print(f"    filename: {document_path.name}")
         print(f"    chunking: recursive size={args.chunk_size} overlap={args.chunk_overlap}")
-        print("    indexed document preview:")
-        print(f"    {preview_text(document_content, args.document_preview_chars)}")
+        print(f"    indexed document first {DOCUMENT_PREVIEW_LINES} lines:")
+        for line_number, line in enumerate(
+            first_lines(document_content, DOCUMENT_PREVIEW_LINES),
+            start=1,
+        ):
+            print(f"    {line_number:02d}: {line}")
         job = platform.data.ingest(
             index_name=args.index,
             filename=document_path.name,

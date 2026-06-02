@@ -232,7 +232,7 @@ uv run python examples/live_stack_smoke.py
 ```
 
 This creates a disposable index, ingests `chapter-5.md`, searches it through
-Gateway, prints the indexed document preview, question, and retrieved response,
+Gateway, prints the indexed document's first 10 lines, question, and retrieved response,
 and removes the index unless `--keep-index` is passed.
 
 ```mermaid
