@@ -52,6 +52,35 @@ axe-suite down
 axe-suite ask "VectorDB 후보 중에 뭐가 제일 단순해?" --top-k 3
 ```
 
+## CI / Codecheck
+
+GitHub Actions workflow를 codecheck gate로 사용한다. Pull request와 `main` push에서 다음 검증을 수행한다.
+
+1. `uv sync --frozen --extra postgres`
+2. `uv run ruff check`
+3. `uv run ruff format --check .`
+4. `uv run pytest -q`
+5. `docker compose config --quiet`
+6. `uv run python main.py --help`
+
+## Live Stack Smoke Test
+
+실행 중인 Docker stack은 `examples/live_stack_smoke.py`로 end-to-end 확인한다.
+
+```bash
+axe-suite up --vector-db qdrant --local-embedding
+uv run python examples/live_stack_smoke.py
+```
+
+이 script는 기본적으로 `chapter-5.md`를 index하여 SDK가 Gateway를 통해 Data Service와 Model
+Service에 접근하고, local embedding 결과가 선택된 VectorDB backend에 저장/검색되는지 확인한다.
+embedding model은 hard-code하지 않고 Model Service의 `ListEmbeddingModels` 응답에서 우선 local
+provider model을 선택한다. 알 수 없는 custom model은 `--embedding-dimensions`를 명시해야 한다.
+Qwen CPU smoke run처럼 embedding이 느린 경우를 위해 ingest timeout 기본값은 300초로 둔다.
+출력에는 indexed document 첫 10 lines, question, retrieved response가 포함된다. 검색 결과는 step
+number와 헷갈리지 않도록 `Result N:` 형식으로 표시한다. 기본적으로 test index를 삭제하며, 수동 확인이
+필요하면 `--keep-index`를 사용한다.
+
 ## 관련 문서
 
 - [PDF RAG MVP 인터페이스 설계서](pdf-rag-mvp-interface-design.md)
@@ -87,6 +116,15 @@ platform 실행은 Docker Compose 직접 실행 대신 얇은 CLI wrapper를 기
 container를 함께 띄울지 물어본다. VectorDB 선택지는 LanceDB를 제외한 7개
 `Qdrant`, `Chroma`, `Milvus`, `Weaviate`, `pgvector`, `OpenSearch`, `Azure AI Search`를
 보여준다. LanceDB는 OSS 사용 방식이 embedded-first라 별도 service container 후보에서 제외한다.
+local embedding container를 선택하면 research 문서의 local 후보 중 `minilm`, `bge-m3`,
+`qwen3-0.6b`, `e5-large`, `arctic-l-v2` alias를 선택할 수 있다. `minilm`은 빠른 plumbing smoke
+기본값으로 유지하고, 실제 한국어/다국어 RAG 1차 local 후보는 `bge-m3`로 둔다.
+Mac/CPU Docker 환경에서 Qwen/BGE 같은 큰 embedding model warmup이 OOM으로 실패할 수 있으므로
+local TEI container는 conservative default
+`LOCAL_EMBEDDING_TOKENIZATION_WORKERS=1`, `LOCAL_EMBEDDING_MAX_CONCURRENT_REQUESTS=1`,
+`LOCAL_EMBEDDING_MAX_BATCH_TOKENS=2048`, `LOCAL_EMBEDDING_MAX_CLIENT_BATCH_SIZE=1`로 시작한다.
+Model Service는 같은 client batch size에 맞춰 local embedding request를 split한다. production-like
+Linux/GPU 환경에서는 env override로 높인다.
 
 VectorDB adapter 구조는 `Postgres state store + selected vector backend`로 둔다. Postgres는
 index metadata, document metadata, ingest jobs, keyword-search text를 유지하고, 선택된 backend는

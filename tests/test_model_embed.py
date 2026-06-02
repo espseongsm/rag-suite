@@ -191,6 +191,46 @@ class TestHuggingFaceEmbeddingProvider:
             provider.embed(["hello"], "nonexistent-model")
 
 
+class TestLocalEmbeddingProvider:
+    def test_embed_splits_requests_by_batch_size(self):
+        from services.models.embedding_providers.local_provider import LocalEmbeddingProvider
+
+        class FakeResponse:
+            def __init__(self, payload):
+                self._payload = payload
+
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                return self._payload
+
+        class FakeClient:
+            def __init__(self):
+                self.calls = []
+
+            def post(self, url, json):
+                self.calls.append((url, json["inputs"]))
+                return FakeResponse([[float(len(text))] for text in json["inputs"]])
+
+        provider = LocalEmbeddingProvider(
+            base_url="http://embedding-local",
+            model_names=["local-model"],
+            request_batch_size=1,
+        )
+        fake_client = FakeClient()
+        provider._client = fake_client
+
+        response = provider.embed(["a", "bb", "ccc"], "local-model")
+
+        assert response.embeddings == [[1.0], [2.0], [3.0]]
+        assert fake_client.calls == [
+            ("http://embedding-local/embed", ["a"]),
+            ("http://embedding-local/embed", ["bb"]),
+            ("http://embedding-local/embed", ["ccc"]),
+        ]
+
+
 # ===========================================================================
 # 5. Model Service servicer — Embed RPC
 # ===========================================================================

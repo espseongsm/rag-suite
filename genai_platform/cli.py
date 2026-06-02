@@ -21,6 +21,38 @@ VECTOR_DB_CHOICES = [
     ("azure-ai-search", "Azure AI Search", []),
 ]
 DEFAULT_VECTOR_DB = "pgvector"
+LOCAL_EMBEDDING_MODEL_CHOICES = [
+    (
+        "minilm",
+        "all-MiniLM-L6-v2",
+        "sentence-transformers/all-MiniLM-L6-v2",
+        "fast CPU smoke baseline, 384d",
+    ),
+    (
+        "bge-m3",
+        "BGE-M3",
+        "BAAI/bge-m3",
+        "recommended local multilingual RAG baseline, 1024d",
+    ),
+    (
+        "qwen3-0.6b",
+        "Qwen3-Embedding-0.6B",
+        "Qwen/Qwen3-Embedding-0.6B",
+        "multilingual and long-context candidate, up to 1024d",
+    ),
+    (
+        "e5-large",
+        "multilingual-e5-large",
+        "intfloat/multilingual-e5-large",
+        "widely used multilingual baseline, 1024d",
+    ),
+    (
+        "arctic-l-v2",
+        "Arctic Embed L v2.0",
+        "Snowflake/snowflake-arctic-embed-l-v2.0",
+        "multilingual enterprise retrieval candidate, 1024d",
+    ),
+]
 
 
 def _default_project_dir() -> Path:
@@ -64,6 +96,44 @@ def _resolve_local_embedding(args: argparse.Namespace) -> bool:
     if args.local_embedding is not None:
         return args.local_embedding
     return _ask_local_embedding()
+
+
+def _print_local_embedding_model_menu() -> None:
+    print("Choose local embedding model")
+    for index, (_, label, model_id, note) in enumerate(LOCAL_EMBEDDING_MODEL_CHOICES, start=1):
+        print(f"{index}) {label} ({model_id}) - {note}")
+
+
+def _normalize_local_embedding_model_choice(choice: str) -> str:
+    value = choice.strip()
+    normalized = value.lower()
+    if normalized.isdigit():
+        index = int(normalized)
+        if 1 <= index <= len(LOCAL_EMBEDDING_MODEL_CHOICES):
+            return LOCAL_EMBEDDING_MODEL_CHOICES[index - 1][2]
+
+    for key, label, model_id, _ in LOCAL_EMBEDDING_MODEL_CHOICES:
+        if normalized in {key, label.lower(), model_id.lower()}:
+            return model_id
+    return value
+
+
+def _ask_local_embedding_model() -> str | None:
+    if not sys.stdin.isatty():
+        return None
+    _print_local_embedding_model_menu()
+    answer = input("Select local embedding model [1: all-MiniLM-L6-v2]: ").strip()
+    if not answer:
+        return None
+    return _normalize_local_embedding_model_choice(answer)
+
+
+def _resolve_local_embedding_model(args: argparse.Namespace, local_embedding: bool) -> str | None:
+    if not local_embedding:
+        return None
+    if args.local_embedding_model:
+        return _normalize_local_embedding_model_choice(args.local_embedding_model)
+    return _ask_local_embedding_model()
 
 
 def _vector_db_help() -> str:
@@ -137,6 +207,7 @@ def _run_up(args: argparse.Namespace) -> int:
     vector_db = _resolve_vector_db(args)
     _validate_vector_db_environment(vector_db)
     local_embedding = _resolve_local_embedding(args)
+    local_embedding_model = _resolve_local_embedding_model(args, local_embedding)
     profiles = _profiles_for_vector_db(vector_db)
     if local_embedding:
         profiles.append("local-embedding")
@@ -150,8 +221,8 @@ def _run_up(args: argparse.Namespace) -> int:
 
     env = os.environ.copy()
     env["VECTOR_STORE"] = vector_db
-    if args.local_embedding_model:
-        env["LOCAL_EMBEDDING_MODEL"] = args.local_embedding_model
+    if local_embedding_model:
+        env["LOCAL_EMBEDDING_MODEL"] = local_embedding_model
 
     return _run(command, env=env)
 
@@ -260,7 +331,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     up.add_argument(
         "--local-embedding-model",
-        help="Model id for the optional local embedding container.",
+        help="Model id or researched alias for the optional local embedding container.",
     )
     up.set_defaults(func=_run_up, build=True, detach=True)
 

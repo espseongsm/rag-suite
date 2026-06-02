@@ -27,6 +27,7 @@ services:
     environment:
       LOCAL_EMBEDDING_URL: http://embedding-local:80
       LOCAL_EMBEDDING_MODELS: ${LOCAL_EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      LOCAL_EMBEDDING_REQUEST_BATCH_SIZE: ${LOCAL_EMBEDDING_MAX_CLIENT_BATCH_SIZE:-1}
 
   data:
     build:
@@ -72,6 +73,14 @@ services:
     command:
       - "--model-id"
       - "${LOCAL_EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}"
+      - "--tokenization-workers"
+      - "${LOCAL_EMBEDDING_TOKENIZATION_WORKERS:-1}"
+      - "--max-concurrent-requests"
+      - "${LOCAL_EMBEDDING_MAX_CONCURRENT_REQUESTS:-1}"
+      - "--max-batch-tokens"
+      - "${LOCAL_EMBEDDING_MAX_BATCH_TOKENS:-2048}"
+      - "--max-client-batch-size"
+      - "${LOCAL_EMBEDDING_MAX_CLIENT_BATCH_SIZE:-1}"
     environment:
       HF_TOKEN: ${HF_TOKEN:-}
     volumes:
